@@ -1,5 +1,6 @@
 import { Actor, Game, Level } from "unreal-pixijs";
 import { PlayerCharacter } from "../actors/player_character";
+import { FightWidget } from "../widgets/fight_widget";
 
 export class FightLevel extends Level {
     spawnX: number
@@ -16,6 +17,7 @@ export class FightLevel extends Level {
         super.onLoad();
 
         this.addActor(new PlayerCharacter(this.game, this.spawnX, this.spawnY));
+        this.addWidget(new FightWidget(this.game));
     }
 
     update (deltaTime: number) {

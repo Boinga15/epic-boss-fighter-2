@@ -5,10 +5,14 @@ import { PlayerProjectile } from "./projectile";
 import { weaponStats } from "../data/stats";
 
 export class PlayerCharacter extends Actor {
-    playerRef: Player
+    playerRef: Player;
 
-    speed: number
-    nextShot: number = 0
+    baseSpeed: number = 400;
+    speed: number = 400;
+    nextShot: number = 0;
+    dashBar: number = 100;
+
+    isDashing: boolean = false;
     
     constructor(game: Game, x: number, y: number) {
         super(game);
@@ -20,9 +24,6 @@ export class PlayerCharacter extends Actor {
 
         // Graphics
         this.addChild(new Graphics().rect(-20, -20, 40, 40).fill("#00ff4cff"));
-
-        // Statistics
-        this.speed = 400;
     }
 
     private handleFiring(deltaTime: number) {
@@ -33,8 +34,6 @@ export class PlayerCharacter extends Actor {
         }
 
         let chosenWeapon = -1;
-
-        console.log(this.game.mouseDown)
 
         if (this.game.mouseDown[0]) {
             chosenWeapon = 0;
@@ -82,6 +81,27 @@ export class PlayerCharacter extends Actor {
             this.y = Math.min(480, Math.max(-480, this.y + (this.speed * deltaTime)));
         }
 
-        this.handleFiring(deltaTime)
+        this.handleFiring(deltaTime);
+
+        // Handle Dashing
+        let dashRecoveryRate = 100;
+        let dashLossRate = 400;
+
+        if (!this.isDashing) {
+            this.dashBar = Math.max(0, Math.min(100, this.dashBar + (dashRecoveryRate * deltaTime)));
+            this.speed = this.baseSpeed
+        } else {
+            this.dashBar = Math.max(0, Math.min(100, this.dashBar - (dashLossRate * deltaTime)));
+            this.speed = this.baseSpeed * 3;
+
+            if (this.dashBar <= 0) {
+                this.isDashing = false;
+            }
+        }
+
+        console.log(this.game.keys)
+        if (this.game.keys["Space"]) {
+            this.isDashing = true;
+        }
     }
 }
