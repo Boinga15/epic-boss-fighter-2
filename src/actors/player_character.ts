@@ -15,10 +15,7 @@ export class PlayerCharacter extends Actor {
     isDashing: boolean = false;
     
     constructor(game: Game, x: number, y: number) {
-        super(game);
-
-        this.x = x;
-        this.y = y;
+        super(game, x, y, 2);
 
         this.playerRef = game.getPersistantActorOfClass(Player)!;
 
@@ -55,7 +52,7 @@ export class PlayerCharacter extends Actor {
             const adjustmentFactor = (Math.random() * 2) - 1;
             fireAngle += (projectileStatistics.spread * Math.PI / 180) * adjustmentFactor;
             
-            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage, projectileStatistics.pierce, projectileStatistics.explosive);
+            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage, projectileStatistics.pierce, projectileStatistics.explosive, projectileStatistics.knockback);
             
             newProjectile.x = this.x;
             newProjectile.y = this.y;
@@ -99,7 +96,6 @@ export class PlayerCharacter extends Actor {
             }
         }
 
-        console.log(this.game.keys)
         if (this.game.keys["Space"]) {
             this.isDashing = true;
         }

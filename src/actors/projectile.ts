@@ -1,17 +1,19 @@
 import { Graphics } from "pixi.js";
 import { Actor, Game } from "unreal-pixijs";
+import { BaseEnemy } from "./enemy";
 
 export class Projectile extends Actor {
     speed: number;
     pAngle: number;
     size: number;
     colour: string;
+    knockback: number;
 
     lifetime: number;
 
     circleGraphics: Graphics;
 
-    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number) {
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number, knockback: number) {
         super(game);
 
         this.speed = speed;
@@ -21,6 +23,7 @@ export class Projectile extends Actor {
         this.colour = colour;
 
         this.lifetime = lifetime;
+        this.knockback = knockback * 2;
 
         this.circleGraphics = new Graphics().circle(0, 0, this.size).fill(this.colour);
         this.addChild(this.circleGraphics);
@@ -48,10 +51,29 @@ export class PlayerProjectile extends Projectile {
     explosive: boolean;
     damage: number;
 
-    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1, pierce: number = 0, explosive: boolean = false) {
-        super(game, speed, angle, size, colour, lifetime);
+    hitEnemies: BaseEnemy[] = []
+
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1, pierce: number = 0, explosive: boolean = false, knockback: number = 1) {
+        super(game, speed, angle, size, colour, lifetime, knockback);
         this.pierce = pierce;
         this.explosive = explosive
         this.damage = damage
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        for (const enemy of this.game.level!.getActorsOfClass(BaseEnemy)) {
+            if (this.game.pointToRectCollision({ x: this.x, y: this.y }, {x: enemy.x - Math.floor(enemy.size / 2), y: enemy.y - Math.floor(enemy.size / 2), xSize: enemy.size, ySize: enemy.size}) && !(this.hitEnemies.includes(enemy))) {
+                this.hitEnemies.push(enemy);
+                enemy.takeDamage(this.damage, this.pAngle, this.knockback);
+
+                this.pierce -= 1;
+
+                if (this.pierce < 0) {
+                    this.remove();
+                }
+            }
+        }
     }
 }

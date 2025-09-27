@@ -10,7 +10,8 @@ export const weaponStats: Record<Weapon, {
     explosive: boolean,
     spread: number,
     fireRate: number,
-    projectileCount: number
+    projectileCount: number,
+    knockback: number
 }> = {
     "Chaingun": {
         speed: 1200,
@@ -22,7 +23,8 @@ export const weaponStats: Record<Weapon, {
         explosive: false,
         spread: 10,
         fireRate: 0.04,
-        projectileCount: 2
+        projectileCount: 2,
+        knockback: 1
     },
     "Flamethrower": {
         speed: 1400,
@@ -34,7 +36,8 @@ export const weaponStats: Record<Weapon, {
         explosive: false,
         spread: 20,
         fireRate: 0.02,
-        projectileCount: 10
+        projectileCount: 10,
+        knockback: 0.1
     },
     "Machine Gun": {
         speed: 1200,
@@ -46,7 +49,8 @@ export const weaponStats: Record<Weapon, {
         explosive: false,
         spread: 2,
         fireRate: 0.05,
-        projectileCount: 1
+        projectileCount: 1,
+        knockback: 1.2
     },
     "Rifle": {
         speed: 1400,
@@ -58,7 +62,8 @@ export const weaponStats: Record<Weapon, {
         explosive: false,
         spread: 0,
         fireRate: 0.2,
-        projectileCount: 1
+        projectileCount: 1,
+        knockback: 3
     },
     "Rocket Launcher": {
         speed: 800,
@@ -70,7 +75,8 @@ export const weaponStats: Record<Weapon, {
         explosive: true,
         spread: 0,
         fireRate: 0.3
-        ,projectileCount: 1
+        ,projectileCount: 1,
+        knockback: 3
     },
     "Shotgun": {
         speed: 1200,
@@ -82,6 +88,7 @@ export const weaponStats: Record<Weapon, {
         explosive: false,
         spread: 30,
         fireRate: 0.15,
-        projectileCount: 6
+        projectileCount: 6,
+        knockback: 1.1
     }
 }
