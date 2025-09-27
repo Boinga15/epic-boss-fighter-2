@@ -1,0 +1,1 @@
+export type Weapon = "Machine Gun" | "Shotgun" | "Rifle" | "Chaingun" | "Flamethrower" | "Rocket Launcher"

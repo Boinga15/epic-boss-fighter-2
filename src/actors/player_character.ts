@@ -2,6 +2,7 @@ import { Actor, Game } from "unreal-pixijs";
 import { Player } from "./persistant/player";
 import { Graphics } from "pixi.js";
 import { PlayerProjectile } from "./projectile";
+import { weaponStats } from "../data/stats";
 
 export class PlayerCharacter extends Actor {
     playerRef: Player
@@ -27,18 +28,43 @@ export class PlayerCharacter extends Actor {
     private handleFiring(deltaTime: number) {
         this.nextShot -= deltaTime;
 
-        if (this.nextShot > 0 || !this.game.mouseDown[0]) {
+        if (this.nextShot > 0) {
             return;
         }
 
-        const fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
-        const newProjectile = new PlayerProjectile(this.game, 1200, fireAngle, 10, "#fff200ff", 0);
-        
-        newProjectile.x = this.x;
-        newProjectile.y = this.y;
+        let chosenWeapon = -1;
 
-        this.game.level!.addActor(newProjectile);
-        this.nextShot = 0.05;
+        console.log(this.game.mouseDown)
+
+        if (this.game.mouseDown[0]) {
+            chosenWeapon = 0;
+        } else if (this.game.mouseDown[2]) {
+            chosenWeapon = 1;
+        }
+
+        if (chosenWeapon == -1) {
+            return;
+        }
+
+        const selectedWeapon = this.playerRef.equippedWeapons[chosenWeapon];
+        const projectileStatistics = weaponStats[selectedWeapon];
+
+        for (let i = 0; i < projectileStatistics.projectileCount; i++) {
+            let fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
+            
+            // Adjust angle for spread.
+            const adjustmentFactor = (Math.random() * 2) - 1;
+            fireAngle += (projectileStatistics.spread * Math.PI / 180) * adjustmentFactor;
+            
+            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage, projectileStatistics.pierce, projectileStatistics.explosive);
+            
+            newProjectile.x = this.x;
+            newProjectile.y = this.y;
+
+            this.game.level!.addActor(newProjectile);
+        }
+
+        this.nextShot = projectileStatistics.fireRate;
     }
 
     update(deltaTime: number) {

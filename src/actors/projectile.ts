@@ -7,9 +7,11 @@ export class Projectile extends Actor {
     size: number;
     colour: string;
 
+    lifetime: number;
+
     circleGraphics: Graphics;
 
-    constructor(game: Game, speed: number, angle: number, size: number, colour: string) {
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number) {
         super(game);
 
         this.speed = speed;
@@ -17,6 +19,8 @@ export class Projectile extends Actor {
 
         this.size = size;
         this.colour = colour;
+
+        this.lifetime = lifetime;
 
         this.circleGraphics = new Graphics().circle(0, 0, this.size).fill(this.colour);
         this.addChild(this.circleGraphics);
@@ -30,9 +34,9 @@ export class Projectile extends Actor {
         this.x += vectorSpeed.x * deltaTime;
         this.y += vectorSpeed.y * deltaTime;
 
-        //console.log(`x: ${this.x}, y: ${this.y}`)
+        this.lifetime -= deltaTime;
 
-        if (this.x > 500 + this.size || this.x < -500 - this.size || this.y > 500 + this.size || this.y < -500 - this.size) {
+        if (this.x > 500 + this.size || this.x < -500 - this.size || this.y > 500 + this.size || this.y < -500 - this.size || this.lifetime <= 0) {
             this.remove();
         }
     }
@@ -40,10 +44,14 @@ export class Projectile extends Actor {
 
 
 export class PlayerProjectile extends Projectile {
-    pierce: number = 0;
+    pierce: number;
+    explosive: boolean;
+    damage: number;
 
-    constructor(game: Game, speed: number, angle: number, size: number, colour: string, pierce: number = 0) {
-        super(game, speed, angle, size, colour);
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1, pierce: number = 0, explosive: boolean = false) {
+        super(game, speed, angle, size, colour, lifetime);
         this.pierce = pierce;
+        this.explosive = explosive
+        this.damage = damage
     }
 }
