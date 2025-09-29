@@ -8,3 +8,11 @@ export const weaponDescriptions: Record<Weapon, string> = {
     "Rocket Launcher": "",
     "Shotgun": ""
 };
+
+export const difficulties: string[] = [
+    "Easy",
+    "Normal",
+    "Hard",
+    "Impossible",
+    "Not Even Remotely Fair"
+]

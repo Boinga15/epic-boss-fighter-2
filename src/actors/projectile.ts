@@ -1,6 +1,7 @@
 import { Graphics } from "pixi.js";
 import { Actor, Game } from "unreal-pixijs";
 import { BaseEnemy } from "./enemy";
+import { Explosion } from "./explosion";
 
 export class Projectile extends Actor {
     speed: number;
@@ -69,6 +70,10 @@ export class PlayerProjectile extends Projectile {
                 enemy.takeDamage(this.damage, this.pAngle, this.knockback);
 
                 this.pierce -= 1;
+
+                if (this.explosive) {
+                    this.game.level!.addActor(new Explosion(this.game, this.x, this.y, "#ff8c00ff", 200, 500, 5, 1));
+                }
 
                 if (this.pierce < 0) {
                     this.remove();
