@@ -2,6 +2,7 @@ import { Graphics } from "pixi.js";
 import { Actor, Game } from "unreal-pixijs";
 import { BaseEnemy } from "./enemy";
 import { Explosion } from "./explosion";
+import { Player } from "./persistant/player";
 
 export class Projectile extends Actor {
     speed: number;
@@ -68,6 +69,11 @@ export class PlayerProjectile extends Projectile {
             if (this.game.pointToRectCollision({ x: this.x, y: this.y }, {x: enemy.x - Math.floor(enemy.size / 2), y: enemy.y - Math.floor(enemy.size / 2), xSize: enemy.size, ySize: enemy.size}) && !(this.hitEnemies.includes(enemy))) {
                 this.hitEnemies.push(enemy);
                 enemy.takeDamage(this.damage, this.pAngle, this.knockback);
+
+                if (this.game.getPersistantActorOfClass(Player)!.equippedArmour === "Leech Armour") {
+                    const playerRef = this.game.getPersistantActorOfClass(Player)!;
+                    playerRef.health = Math.max(0, Math.min(100, playerRef.health + this.damage));
+                }
 
                 this.pierce -= 1;
 

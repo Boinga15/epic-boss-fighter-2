@@ -21,7 +21,7 @@ export class FightLevel extends Level {
         super.onLoad();
 
         this.addActor(new PlayerCharacter(this.game, this.spawnX, this.spawnY));
-        const newBoss = new BaseEnemy(this.game, 0, 0, "Base Enemy", 0, false, 100, "#ff0000", 40, 0.999);
+        const newBoss = new BaseEnemy(this.game, 0, 0, "Base Enemy", 1, false, 100, "#ff0000", 40, 0.999, 20);
         this.bosses.push(newBoss);
         this.addActor(newBoss);
         

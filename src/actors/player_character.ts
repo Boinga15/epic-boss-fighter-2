@@ -3,6 +3,7 @@ import { Player } from "./persistant/player";
 import { Graphics } from "pixi.js";
 import { PlayerProjectile } from "./projectile";
 import { weaponStats } from "../data/stats";
+import { Armour } from "../data/types";
 
 export class PlayerCharacter extends Actor {
     playerRef: Player;
@@ -52,7 +53,7 @@ export class PlayerCharacter extends Actor {
             const adjustmentFactor = (Math.random() * 2) - 1;
             fireAngle += (projectileStatistics.spread * Math.PI / 180) * adjustmentFactor;
             
-            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage, projectileStatistics.pierce, projectileStatistics.explosive, projectileStatistics.knockback);
+            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage * this.getDamageMultiplier(), projectileStatistics.pierce, projectileStatistics.explosive, projectileStatistics.knockback);
             
             newProjectile.x = this.x;
             newProjectile.y = this.y;
@@ -63,8 +64,42 @@ export class PlayerCharacter extends Actor {
         this.nextShot = projectileStatistics.fireRate;
     }
 
+    takeDamage(damage: number) {
+        const armourDefence: Record<Armour, number> = {
+            "Battle Armour": 1,
+            "Leech Armour": 1.6,
+            "Raider Armour": 1.4,
+            "Tank Armour": 0.6,
+            "Viking Armour": 1.1,
+            "Worn Armour": 3
+        }
+
+        if (this.isDashing) {
+            return;
+        }
+
+        this.playerRef.health = Math.min(100, Math.max(0, this.playerRef.health - (damage * armourDefence[this.playerRef.equippedArmour])))
+    }
+
+    getDamageMultiplier() {
+        const armourDamage: Record<Armour, number> = {
+            "Battle Armour": 1,
+            "Leech Armour": 0.7,
+            "Raider Armour": 1.2,
+            "Tank Armour": 1.1,
+            "Viking Armour": 1 + (1 - (this.playerRef.health / 100)),
+            "Worn Armour": 0.5
+        }
+
+        return armourDamage[this.playerRef.equippedArmour];
+    }
+
     update(deltaTime: number) {
         super.update(deltaTime);
+
+        if (this.playerRef.equippedArmour === "Viking Armour") {
+            this.baseSpeed = 500;
+        }
 
         if (this.game.keys["KeyD"]) {
             this.x = Math.min(480, Math.max(-480, this.x + (this.speed * deltaTime)));
@@ -83,6 +118,13 @@ export class PlayerCharacter extends Actor {
         // Handle Dashing
         let dashRecoveryRate = 100;
         let dashLossRate = 400;
+
+        if (this.playerRef.equippedArmour === "Raider Armour") {
+            dashRecoveryRate = 160;
+        } else if (this.playerRef.equippedArmour === "Tank Armour") {
+            dashRecoveryRate = 70;
+            dashLossRate = 500;
+        }
 
         if (!this.isDashing) {
             this.dashBar = Math.max(0, Math.min(100, this.dashBar + (dashRecoveryRate * deltaTime)));

@@ -1,1 +1,2 @@
 export type Weapon = "Machine Gun" | "Shotgun" | "Rifle" | "Chaingun" | "Flamethrower" | "Rocket Launcher";
+export type Armour = "Battle Armour" | "Raider Armour" | "Tank Armour" | "Viking Armour" | "Leech Armour" | "Worn Armour";

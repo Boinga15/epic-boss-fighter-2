@@ -1,5 +1,6 @@
 import { Graphics } from "pixi.js";
 import { Actor, Game } from "unreal-pixijs";
+import { PlayerCharacter } from "./player_character";
 
 export class BaseEnemy extends Actor {
     maxHealth: number;
@@ -12,10 +13,13 @@ export class BaseEnemy extends Actor {
     colour: string;
     size: number;
     friction: number;
+    contactDamage: number;
 
     velocity: {x: number, y: number} = {x: 0, y: 0};
 
-    constructor(game: Game, x: number, y: number, name: string, difficulty: number, boss: boolean, health: number, colour: string, size: number, friction: number) {
+    playerObject: PlayerCharacter | undefined;
+
+    constructor(game: Game, x: number, y: number, name: string, difficulty: number, boss: boolean, health: number, colour: string, size: number, friction: number, contactDamage: number) {
         super(game, x, y, 1);
 
         this.maxHealth = health;
@@ -28,6 +32,7 @@ export class BaseEnemy extends Actor {
         this.colour = colour;
         this.size = size;
         this.friction = friction;
+        this.contactDamage = contactDamage;
 
         this.addChild(new Graphics().rect(-Math.floor(this.size / 2), -Math.floor(this.size / 2), this.size, this.size).fill(this.colour));
     }
@@ -35,11 +40,22 @@ export class BaseEnemy extends Actor {
     update(deltaTime: number) {
         super.update(deltaTime);
 
+        if (this.playerObject === undefined) {
+            this.playerObject = this.game.level!.getActorOfClass(PlayerCharacter);
+        }
+
         this.velocity.x = this.velocity.x * (1 - this.friction)**(deltaTime);
         this.velocity.y = this.velocity.y * (1 - this.friction)**(deltaTime);
 
         this.x += this.velocity.x;
         this.y += this.velocity.y;
+
+        // Contact Damage
+        if (this.playerObject !== undefined) {
+            if (this.game.rectToRectCollision({x: this.x - (this.size / 2), y: this.y - (this.size / 2), xSize: this.size, ySize: this.size}, {x: this.playerObject.x - 20, y: this.playerObject.y - 20, xSize: 40, ySize: 40})) {
+                this.playerObject.takeDamage(this.contactDamage * this.getDamageMultiplier() * deltaTime)
+            }
+        }
     }
 
     takeDamage(damage: number, angle: number, knockback: number) {
