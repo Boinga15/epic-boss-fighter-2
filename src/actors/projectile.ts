@@ -3,6 +3,7 @@ import { Actor, Game } from "unreal-pixijs";
 import { BaseEnemy } from "./enemy";
 import { Explosion } from "./explosion";
 import { Player } from "./persistant/player";
+import { specialStats } from "../data/stats";
 
 export class Projectile extends Actor {
     speed: number;
@@ -73,6 +74,10 @@ export class PlayerProjectile extends Projectile {
                 if (this.game.getPersistantActorOfClass(Player)!.equippedArmour === "Leech Armour") {
                     const playerRef = this.game.getPersistantActorOfClass(Player)!;
                     playerRef.health = Math.max(0, Math.min(100, playerRef.health + this.damage));
+                    
+                    if (playerRef.chargedSpecials < specialStats[playerRef.equippedSpecial].maxCharges) {
+                        playerRef.specialAmount = Math.max(0, Math.min(100, playerRef.specialAmount + this.damage));
+                    }
                 }
 
                 this.pierce -= 1;

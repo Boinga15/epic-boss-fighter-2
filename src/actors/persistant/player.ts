@@ -2,8 +2,8 @@ import { Actor, Game } from "unreal-pixijs";
 import { Armour, Special, Weapon } from "../../data/types";
 
 export class Player extends Actor {
-    equippedWeapons: Weapon[] = ["Machine Gun", "Rocket Launcher"]
-    equippedArmour: Armour = "Battle Armour";
+    equippedWeapons: Weapon[] = ["Machine Gun", "Shotgun"]
+    equippedArmour: Armour = "Leech Armour";
     equippedSpecial: Special = "Power Shot";
 
     health: number = 100;
