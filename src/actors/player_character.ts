@@ -1,9 +1,10 @@
 import { Actor, Game } from "unreal-pixijs";
 import { Player } from "./persistant/player";
 import { Graphics } from "pixi.js";
-import { PlayerProjectile } from "./projectile";
-import { weaponStats } from "../data/stats";
+import { PlayerPowerProjectile, PlayerProjectile } from "./projectile";
+import { specialStats, weaponStats } from "../data/stats";
 import { Armour } from "../data/types";
+import { Explosion } from "./explosion";
 
 export class PlayerCharacter extends Actor {
     playerRef: Player;
@@ -14,6 +15,8 @@ export class PlayerCharacter extends Actor {
     dashBar: number = 100;
 
     isDashing: boolean = false;
+    usingSpecial: boolean = false;
+    specialKeyHeld: boolean = false;
     
     constructor(game: Game, x: number, y: number) {
         super(game, x, y, 2);
@@ -74,7 +77,7 @@ export class PlayerCharacter extends Actor {
             "Worn Armour": 3
         }
 
-        if (this.isDashing) {
+        if (this.isDashing || (this.usingSpecial && this.playerRef.equippedSpecial === "Invincibility")) {
             return;
         }
 
@@ -89,9 +92,15 @@ export class PlayerCharacter extends Actor {
             "Tank Armour": 1.1,
             "Viking Armour": 1 + (1 - (this.playerRef.health / 100)),
             "Worn Armour": 0.5
+        };
+
+        let multiplier = armourDamage[this.playerRef.equippedArmour];
+
+        if (this.playerRef.equippedSpecial === "Overcharge" && this.usingSpecial) {
+            multiplier *= 2;
         }
 
-        return armourDamage[this.playerRef.equippedArmour];
+        return multiplier;
     }
 
     update(deltaTime: number) {
@@ -138,8 +147,69 @@ export class PlayerCharacter extends Actor {
             }
         }
 
-        if (this.game.keys["Space"]) {
+        if (this.game.keys["Space"] && this.dashBar >= 100) {
             this.isDashing = true;
+        }
+
+        // Charging Special
+        const specialStat = specialStats[this.playerRef.equippedSpecial];
+
+        if (this.usingSpecial) {
+            this.playerRef.specialAmount -= specialStat.drainSpeed * deltaTime;
+
+            if (this.playerRef.specialAmount <= 0) {
+                this.usingSpecial = false;
+            }
+        } else {
+            if (this.playerRef.chargedSpecials < specialStat.maxCharges) {
+                this.playerRef.specialAmount += specialStat.chargeSpeed * deltaTime;
+
+                if (this.playerRef.specialAmount >= 100) {
+                    this.playerRef.specialAmount = 0;
+                    this.playerRef.chargedSpecials += 1;
+                }
+            }
+        }
+
+        // Using Special
+        if (this.game.keys["KeyQ"] && this.playerRef.chargedSpecials >= 1 && !this.usingSpecial && !this.specialKeyHeld) {
+            this.specialKeyHeld = true;
+            this.playerRef.chargedSpecials -= 1;
+
+            switch (this.playerRef.equippedSpecial) {
+                case "Burst":
+                    const newExplosion = new Explosion(this.game, this.x, this.y, "#0eace0ff", 500, 800, 30, 1);
+                    this.game.level!.addActor(newExplosion);
+                    break;
+                
+                case "Overcharge":
+                    this.usingSpecial = true;
+                    this.playerRef.specialAmount = 100;
+                    break;
+                
+                case "Invincibility":
+                    this.usingSpecial = true;
+                    this.playerRef.specialAmount = 100;
+                    break;
+                
+                case "Power Shot":
+                    const fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
+                    const newProjectile = new PlayerPowerProjectile(this.game, 200, fireAngle, 100, "#009d2fff", 180, 10, 10);
+                    
+                    newProjectile.x = this.x + 20;
+                    newProjectile.y = this.y + 20;
+                    
+                    this.game.level!.addActor(newProjectile);
+                    
+                    break;
+                
+                case "Restore":
+                    this.playerRef.health = Math.max(0, Math.min(100, this.playerRef.health + 15));
+                    break;
+                
+            }
+        } else if (!this.game.keys["KeyQ"]) {
+            this.specialKeyHeld = false;
         }
     }
 }

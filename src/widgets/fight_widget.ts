@@ -5,6 +5,7 @@ import { Graphics } from "pixi.js";
 import { BaseEnemy } from "../actors/enemy";
 import { FightLevel } from "../levels/fight_level";
 import { difficulties } from "../data/descriptions";
+import { specialStats } from "../data/stats";
 
 export class FightWidget extends Widget {
     playerReference: Player | undefined;
@@ -12,22 +13,30 @@ export class FightWidget extends Widget {
 
     healthBar: Graphics;
     dashBar: Graphics;
+    specialBar: Graphics;
 
     bossBars: Graphics[] = [];
     bossText: WidgetText[] = [];
+
+    specialCards: Graphics[] = [];
 
     constructor(game: Game) {
         super(game, 0, 0, 0);
 
         // Player Statistics
-        this.addChild(new Graphics().rect(0, 970, 200, 50).fill("#171717ff"));
+        this.addChild(new Graphics().rect(0, 965, 200, 50).fill("#171717ff"));
         this.addChild(new Graphics().rect(5, 970, 190, 20).fill("rgba(97, 0, 0, 1)"));
+
+        this.addChild(new Graphics().rect(800, 965, 200, 50).fill("#171717ff"));
+        this.addChild(new Graphics().rect(805, 970, 190, 27.5).fill("#565656ff"));
 
         this.healthBar = new Graphics().rect(5, 970, 190, 20).fill("#11ff00ff");
         this.dashBar = new Graphics().rect(5, 990, 190, 5).fill("#003cffff");
+        this.specialBar = new Graphics().rect(805, 970, 190, 27.5).fill("#fbff00ff");
 
         this.addChild(this.healthBar);
         this.addChild(this.dashBar);
+        this.addChild(this.specialBar);
 
         // Boss Bar
         this.addChild(new Graphics().rect(10, 10, 980, 30).fill("#171717ff"));
@@ -63,16 +72,46 @@ export class FightWidget extends Widget {
         this.game.adjustZIndexes();
     }
 
+    protected onDeconstruct(): void {
+        for (const text of this.bossText) {
+            text.deconstructWidget();
+        }
+
+        super.onDeconstruct();
+    }
+
     update(deltaTime: number) {
         super.update(deltaTime);
 
         // Setting bars.
-        if (this.playerReference !== undefined) {
-            this.healthBar.clear().rect(5, 970, 190 * (this.playerReference.health / 100), 20).fill("#11ff00ff");
-        }
+        if (this.playerReference !== undefined && this.playerObjectReference !== undefined) {
+            const specialColour = (!this.playerObjectReference.usingSpecial ? "#fbff00ff" : "#d60000ff")
 
-        if (this.playerObjectReference !== undefined) {
+            this.healthBar.clear().rect(5, 970, 190 * (this.playerReference.health / 100), 20).fill("#11ff00ff");
             this.dashBar.clear().rect(5, 990, 190 * (this.playerObjectReference.dashBar / 100), 5).fill((this.playerObjectReference.dashBar >= 100 ? "#003cffff" : "#ff0000e8"));
+            this.specialBar.clear().rect(805, 970, 190 * (this.playerReference.specialAmount / 100), 27.5).fill(specialColour);
+
+            // Special Bars
+            const maxCharges = specialStats[this.playerReference.equippedSpecial].maxCharges;
+            let chargeBars = this.playerReference.chargedSpecials
+
+            if (chargeBars >= maxCharges) {
+                chargeBars -= 1;
+                this.specialBar.clear().rect(805, 970, 190, 27.5).fill("#fdff8aff");
+            }
+
+            for (const card of this.specialCards) {
+                if (this.specialCards.indexOf(card) >= chargeBars) {
+                    this.removeChild(card)
+                    this.specialCards = this.specialCards.filter((cCard) => cCard !== card);
+                }
+            }
+
+            while (this.specialCards.length < chargeBars) {
+                const newGraphic = new Graphics().rect(805 + (this.specialCards.length * 20), 950, 15, 15).fill("#fbff00ff");
+                this.addChild(newGraphic);
+                this.specialCards.push(newGraphic);
+            }
         }
 
         // Updating boss bars.

@@ -1,4 +1,4 @@
-import { Weapon } from "./types";
+import { Special, Weapon } from "./types";
 
 export const weaponStats: Record<Weapon, {
     speed: number,
@@ -91,4 +91,17 @@ export const weaponStats: Record<Weapon, {
         projectileCount: 6,
         knockback: 1.1
     }
+}
+
+
+export const specialStats: Record<Special, {
+    chargeSpeed: number,
+    drainSpeed: number,
+    maxCharges: number
+}> = {
+    "Burst": {chargeSpeed: 15, drainSpeed: 0, maxCharges: 3},
+    "Invincibility": {chargeSpeed: 6, drainSpeed: 30, maxCharges: 1},
+    "Overcharge": {chargeSpeed: 7, drainSpeed: 20, maxCharges: 1},
+    "Power Shot": {chargeSpeed: 10, drainSpeed: 0, maxCharges: 3},
+    "Restore": {chargeSpeed: 20, drainSpeed: 0, maxCharges: 5}
 }
