@@ -1,10 +1,11 @@
 import { Actor, Game } from "unreal-pixijs";
 import { Player } from "./persistant/player";
 import { Graphics } from "pixi.js";
-import { PlayerPowerProjectile, PlayerProjectile } from "./projectile";
+import { PlayerLingeringProjectile, PlayerPowerProjectile, PlayerProjectile } from "./projectile";
 import { specialStats, weaponStats } from "../data/stats";
 import { Armour } from "../data/types";
 import { Explosion } from "./explosion";
+import { PlayerSentry } from "./sentry";
 
 export class PlayerCharacter extends Actor {
     playerRef: Player;
@@ -56,8 +57,12 @@ export class PlayerCharacter extends Actor {
             const adjustmentFactor = (Math.random() * 2) - 1;
             fireAngle += (projectileStatistics.spread * Math.PI / 180) * adjustmentFactor;
             
-            const newProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage * this.getDamageMultiplier(), projectileStatistics.pierce, projectileStatistics.explosive, projectileStatistics.knockback);
+            let newProjectile: PlayerProjectile | PlayerLingeringProjectile = new PlayerProjectile(this.game, projectileStatistics.speed, fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage * this.getDamageMultiplier(), projectileStatistics.pierce, projectileStatistics.explosive, projectileStatistics.knockback);
             
+            if (selectedWeapon === "Flamethrower") {
+                newProjectile = new PlayerLingeringProjectile(this.game, projectileStatistics.speed * (0.5 * Math.random() + 0.6), fireAngle, projectileStatistics.size, projectileStatistics.colour, projectileStatistics.lifetime, projectileStatistics.damage * this.getDamageMultiplier());
+            }
+
             newProjectile.x = this.x;
             newProjectile.y = this.y;
 
@@ -176,6 +181,8 @@ export class PlayerCharacter extends Actor {
             this.specialKeyHeld = true;
             this.playerRef.chargedSpecials -= 1;
 
+            const fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
+
             switch (this.playerRef.equippedSpecial) {
                 case "Burst":
                     const newExplosion = new Explosion(this.game, this.x, this.y, "#0eace0ff", 500, 800, 30, 1);
@@ -193,7 +200,7 @@ export class PlayerCharacter extends Actor {
                     break;
                 
                 case "Power Shot":
-                    const fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
+                    
                     const newProjectile = new PlayerPowerProjectile(this.game, 200, fireAngle, 100, "#009d2fff", 180, 10, 10);
                     
                     newProjectile.x = this.x + 20;
@@ -205,6 +212,10 @@ export class PlayerCharacter extends Actor {
                 
                 case "Restore":
                     this.playerRef.health = Math.max(0, Math.min(100, this.playerRef.health + 15));
+                    break;
+                
+                case "Sentry":
+                    this.game.level!.addActor(new PlayerSentry(this.game, this.x, this.y, fireAngle));
                     break;
                 
             }

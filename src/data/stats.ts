@@ -21,16 +21,16 @@ export const weaponStats: Record<Weapon, {
         damage: 0.7,
         pierce: 0,
         explosive: false,
-        spread: 10,
-        fireRate: 0.04,
+        spread: 20,
+        fireRate: 0.03,
         projectileCount: 2,
-        knockback: 1
+        knockback: 1.2
     },
     "Flamethrower": {
         speed: 1400,
         size: 10,
         colour: "#ff8800ff",
-        lifetime: 0.25,
+        lifetime: 3.5,
         damage: 0.1,
         pierce: 10000,
         explosive: false,
@@ -103,5 +103,6 @@ export const specialStats: Record<Special, {
     "Invincibility": {chargeSpeed: 6, drainSpeed: 30, maxCharges: 1},
     "Overcharge": {chargeSpeed: 7, drainSpeed: 20, maxCharges: 1},
     "Power Shot": {chargeSpeed: 10, drainSpeed: 0, maxCharges: 3},
-    "Restore": {chargeSpeed: 20, drainSpeed: 0, maxCharges: 5}
+    "Restore": {chargeSpeed: 20, drainSpeed: 0, maxCharges: 5},
+    "Sentry": {chargeSpeed: 15, drainSpeed: 0, maxCharges: 5}
 }

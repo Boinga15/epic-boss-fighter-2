@@ -3,8 +3,8 @@ import { Armour, Special, Weapon } from "../../data/types";
 
 export class Player extends Actor {
     equippedWeapons: Weapon[] = ["Machine Gun", "Shotgun"]
-    equippedArmour: Armour = "Leech Armour";
-    equippedSpecial: Special = "Power Shot";
+    equippedArmour: Armour = "Battle Armour";
+    equippedSpecial: Special = "Sentry";
 
     health: number = 100;
 

@@ -115,3 +115,28 @@ export class PlayerPowerProjectile extends Projectile {
         }
     }
 }
+
+
+export class PlayerLingeringProjectile extends Projectile {
+    damage: number;
+
+    hitEnemies: BaseEnemy[] = []
+
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1) {
+        super(game, speed, angle, size, colour, lifetime, 0);
+        this.damage = damage;
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        for (const enemy of this.game.level!.getActorsOfClass(BaseEnemy)) {
+            if (this.game.rectToRectCollision({ x: this.x - this.size, y: this.y - this.size, xSize: this.size * 2, ySize: this.size * 2 }, {x: enemy.x - Math.floor(enemy.size / 2), y: enemy.y - Math.floor(enemy.size / 2), xSize: enemy.size, ySize: enemy.size})) {
+                enemy.takeDamage(this.damage * deltaTime, this.pAngle, this.knockback * deltaTime);
+            }
+        }
+
+        // Reduce speed.
+        this.speed = this.speed * 0.02**(deltaTime)
+    }
+}
