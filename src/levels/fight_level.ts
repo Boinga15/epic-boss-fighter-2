@@ -1,7 +1,8 @@
 import { Game, Level } from "unreal-pixijs";
 import { PlayerCharacter } from "../actors/player_character";
 import { FightWidget } from "../widgets/fight_widget";
-import { BaseEnemy } from "../actors/enemy";
+import { BaseEnemy, InfinityBoss } from "../actors/enemy";
+import { Player } from "../actors/persistant/player";
 
 export class FightLevel extends Level {
     spawnX: number
@@ -21,14 +22,21 @@ export class FightLevel extends Level {
         super.onLoad();
 
         this.addActor(new PlayerCharacter(this.game, this.spawnX, this.spawnY));
-        const newBoss = new BaseEnemy(this.game, 0, 0, "Base Enemy", 1, false, 100, "#ff0000", 40, 0.999, 20);
+        const newBoss = new InfinityBoss(this.game, 0, 0, 4, true);
         this.bosses.push(newBoss);
         this.addActor(newBoss);
-        
+
         this.addWidget(new FightWidget(this.game));
     }
 
     update (deltaTime: number) {
         super.update(deltaTime);
+
+        if (this.game.keys["KeyR"]) {
+            this.game.removeAllPersistantActors();
+            this.game.addPersistantActor(new Player(this.game));
+
+            this.game.loadLevel(new FightLevel(this.game));
+        }
     }
 }

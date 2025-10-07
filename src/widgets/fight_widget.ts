@@ -2,7 +2,6 @@ import { Game, Widget, WidgetText } from "unreal-pixijs";
 import { Player } from "../actors/persistant/player";
 import { PlayerCharacter } from "../actors/player_character";
 import { Graphics } from "pixi.js";
-import { BaseEnemy } from "../actors/enemy";
 import { FightLevel } from "../levels/fight_level";
 import { difficulties } from "../data/descriptions";
 import { specialStats } from "../data/stats";

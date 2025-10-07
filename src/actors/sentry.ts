@@ -41,7 +41,7 @@ export class PlayerSentry extends Actor {
         const adjustmentFactor = (Math.random() * 2) - 1;
         fireAngle += (2 * Math.PI / 180) * adjustmentFactor;
 
-        let newProjectile: PlayerProjectile = new PlayerProjectile(this.game, 1300, fireAngle, 10, "#1fdfd6ff", 60, 1 * this.game.level!.getActorOfClass(PlayerCharacter)!.getDamageMultiplier(), 0, false, 1);
+        const newProjectile: PlayerProjectile = new PlayerProjectile(this.game, 1300, fireAngle, 10, "#1fdfd6ff", 60, 1 * this.game.level!.getActorOfClass(PlayerCharacter)!.getDamageMultiplier(), 0, false, 1);
 
         newProjectile.x = this.x;
         newProjectile.y = this.y;

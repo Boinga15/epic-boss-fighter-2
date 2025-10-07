@@ -4,6 +4,7 @@ import { BaseEnemy } from "./enemy";
 import { Explosion } from "./explosion";
 import { Player } from "./persistant/player";
 import { specialStats } from "../data/stats";
+import { PlayerCharacter } from "./player_character";
 
 export class Projectile extends Actor {
     speed: number;
@@ -138,5 +139,26 @@ export class PlayerLingeringProjectile extends Projectile {
 
         // Reduce speed.
         this.speed = this.speed * 0.02**(deltaTime)
+    }
+}
+
+
+export class EnemyProjectile extends Projectile {
+    damage: number;
+
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1) {
+        super(game, speed, angle, size, colour, lifetime, 0);
+        this.damage = damage
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        for (const enemy of this.game.level!.getActorsOfClass(PlayerCharacter)) {
+            if (this.game.pointToRectCollision({ x: this.x, y: this.y }, {x: enemy.x - 20, y: enemy.y - 20, xSize: 40, ySize: 40}) && !enemy.isDashing) {
+                enemy.takeDamage(this.damage);
+                this.remove();
+            }
+        }
     }
 }

@@ -18,6 +18,9 @@ export class PlayerCharacter extends Actor {
     isDashing: boolean = false;
     usingSpecial: boolean = false;
     specialKeyHeld: boolean = false;
+
+    playerCube: Graphics;
+    dashCube: Graphics;
     
     constructor(game: Game, x: number, y: number) {
         super(game, x, y, 2);
@@ -25,7 +28,12 @@ export class PlayerCharacter extends Actor {
         this.playerRef = game.getPersistantActorOfClass(Player)!;
 
         // Graphics
-        this.addChild(new Graphics().rect(-20, -20, 40, 40).fill("#00ff4cff"));
+        this.playerCube = new Graphics().rect(-20, -20, 40, 40).fill("#00ff4cff");
+        this.addChild(this.playerCube);
+
+        // Dash Cube
+        this.dashCube = new Graphics().rect(-20, -20, 0, 10).fill("#585858ff");
+        this.addChild(this.dashCube);
     }
 
     private handleFiring(deltaTime: number) {
@@ -111,8 +119,25 @@ export class PlayerCharacter extends Actor {
     update(deltaTime: number) {
         super.update(deltaTime);
 
+        // Graphical Updates - Dashing
+        if (this.isDashing) {
+            this.playerCube.clear().rect(-20, -20, 40, 40).fill("#00ff4cff");
+            this.dashCube.clear().rect(-20, -20, 40 * (this.dashBar / 100), 10).fill("#222539ff");
+        } else if (this.dashBar < 100) {
+            this.playerCube.clear().rect(-20, -20, 40, 40).fill("#00d440ff");
+            this.dashCube.clear().rect(-20, -20, 40 * (this.dashBar / 100), 10).fill("#222539ff");
+        } else {
+            this.playerCube.clear().rect(-20, -20, 40, 40).fill("#00ff4cff");
+            this.dashCube.clear().rect(-20, -20, 0, 10).fill("#222539ff");
+        }
+
         if (this.playerRef.equippedArmour === "Viking Armour") {
             this.baseSpeed = 500;
+        }
+
+        // Slow Movement
+        if (!this.isDashing && this.game.keys["ShiftLeft"]) {
+            this.speed = this.baseSpeed / 3;
         }
 
         if (this.game.keys["KeyD"]) {
@@ -182,10 +207,11 @@ export class PlayerCharacter extends Actor {
             this.playerRef.chargedSpecials -= 1;
 
             const fireAngle = this.game.getAngle({x: this.x, y: this.y}, {x: this.game.level!.mousePos.x, y: this.game.level!.mousePos.y});
+            const newExplosion = new Explosion(this.game, this.x, this.y, "#0eace0ff", 500, 800, 30, 1);
+            const newPowerProjectile = new PlayerPowerProjectile(this.game, 200, fireAngle, 100, "#009d2fff", 180, 10, 10);
 
             switch (this.playerRef.equippedSpecial) {
                 case "Burst":
-                    const newExplosion = new Explosion(this.game, this.x, this.y, "#0eace0ff", 500, 800, 30, 1);
                     this.game.level!.addActor(newExplosion);
                     break;
                 
@@ -200,13 +226,10 @@ export class PlayerCharacter extends Actor {
                     break;
                 
                 case "Power Shot":
+                    newPowerProjectile.x = this.x + 20;
+                    newPowerProjectile.y = this.y + 20;
                     
-                    const newProjectile = new PlayerPowerProjectile(this.game, 200, fireAngle, 100, "#009d2fff", 180, 10, 10);
-                    
-                    newProjectile.x = this.x + 20;
-                    newProjectile.y = this.y + 20;
-                    
-                    this.game.level!.addActor(newProjectile);
+                    this.game.level!.addActor(newPowerProjectile);
                     
                     break;
                 

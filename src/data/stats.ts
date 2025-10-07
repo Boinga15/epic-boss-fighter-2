@@ -30,13 +30,13 @@ export const weaponStats: Record<Weapon, {
         speed: 1400,
         size: 10,
         colour: "#ff8800ff",
-        lifetime: 3.5,
-        damage: 0.1,
+        lifetime: 2,
+        damage: 0.4,
         pierce: 10000,
         explosive: false,
         spread: 20,
         fireRate: 0.02,
-        projectileCount: 10,
+        projectileCount: 3,
         knockback: 0.1
     },
     "Machine Gun": {
