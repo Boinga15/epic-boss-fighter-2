@@ -1,7 +1,7 @@
 import { Game, Level } from "unreal-pixijs";
 import { PlayerCharacter } from "../actors/player_character";
 import { FightWidget } from "../widgets/fight_widget";
-import { BaseEnemy, InfinityBoss } from "../actors/enemy";
+import { BaseEnemy, Chaser } from "../actors/enemy";
 import { Player } from "../actors/persistant/player";
 
 export class FightLevel extends Level {
@@ -22,7 +22,7 @@ export class FightLevel extends Level {
         super.onLoad();
 
         this.addActor(new PlayerCharacter(this.game, this.spawnX, this.spawnY));
-        const newBoss = new InfinityBoss(this.game, 0, 0, 4, true);
+        const newBoss = new Chaser(this.game, 0, 0, 4, true);
         this.bosses.push(newBoss);
         this.addActor(newBoss);
 

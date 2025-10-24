@@ -203,7 +203,7 @@ export class FlankingEnemy extends BaseEnemy {
 }
 
 
-// Boss Set #1
+// --------------------------- Boss Set #1 ---------------------------
 export class Tank extends BaseEnemy {
     nextShot: number = 0.5
     nextRing: number = 0.7
@@ -396,7 +396,107 @@ export class Sprinter extends BaseEnemy {
 }
 
 
-// Boss Set #2
+export class Chaser extends BaseEnemy {
+    destination: {x: number, y: number};
+    jukePower: number = 10
+    speedMultiplier: number = 1
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Chaser", difficulty, boss, 150, "#8ea16bff", 120, 1, 40);
+        this.destination = {x: this.x, y: this.y};
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        // Handle movement
+        const speed = [200, 240, 280, 340, 420][this.difficulty];
+
+        if (this.game.getSquaredDistance({x: this.x, y: this.y}, this.destination) <= 2000) {
+            this.destination = {
+                x: player.x,
+                y: player.y
+            }
+
+            this.speedMultiplier = 1.5
+            
+            if (this.jukePower > 2 && Math.random() <= 0.4 && this.difficulty >= 1) {
+                // Juke #1: Move to a place next to the player.
+                this.jukePower -= 2
+
+                this.destination = {
+                    x: this.destination.x + (Math.random() * 400) - 200,
+                    y: this.destination.y + (Math.random() * 400) - 200
+                }
+
+                this.speedMultiplier = 1.4
+                
+            } else if (this.jukePower > 1 && Math.random() <= 0.6 && this.difficulty >= 2) {
+                // Juke #2: Move to a nearby space.
+                this.jukePower -= 1
+                
+                this.destination = {
+                    x: this.x + (Math.random() * 400) - 200,
+                    y: this.y + (Math.random() * 400) - 200
+                }
+
+                this.speedMultiplier = 1.8
+
+            } else if (this.jukePower > 5 && Math.random() <= 0.3 && this.difficulty >= 3) {
+                // Juke #3: Move to one of the corners.
+                this.jukePower -= 5
+
+                const destinations = [
+                    {
+                        x: -500 + (this.size / 2),
+                        y: -500 + (this.size / 2)
+                    },
+                    {
+                        x: -500 + (this.size / 2),
+                        y: 500 - (this.size / 2)
+                    },
+                    {
+                        x: 500 - (this.size / 2),
+                        y: -500 + (this.size / 2)
+                    },
+                    {
+                        x: 500 - (this.size / 2),
+                        y: 500 - (this.size / 2)
+                    },
+                ]
+                
+                this.destination = destinations[Math.floor(Math.random() * 4)]
+
+                this.speedMultiplier = 2.5
+
+            } else {
+                this.jukePower = 10
+            }
+
+            if (this.difficulty >= 4) {
+                this.speedMultiplier *= 1.4
+            }
+        }
+
+        const movementVector = this.game.angleToVector(this.game.getAngle({ x: this.x, y: this.y }, { x: this.destination.x, y: this.destination.y }), speed * this.speedMultiplier);
+
+        this.x += movementVector.x * deltaTime;
+        this.y += movementVector.y * deltaTime;
+    }
+}
+
+
+// --------------------------- Boss Set #2 ---------------------------
 export class Sweep extends BaseEnemy {
     nextShot: number = 0.5;
     nextWall: number = 2;
@@ -624,7 +724,7 @@ export class Station extends BaseEnemy {
 }
 
 
-// Boss Set #3
+// --------------------------- Boss Set #3 ---------------------------
 export class Shadow extends BaseEnemy {
     nextTeleport: number = 25;
 
@@ -831,7 +931,7 @@ export class Commando extends BaseEnemy {
 }
 
 
-// Boss Set #4
+// --------------------------- Boss Set #4 ---------------------------
 export class Feral extends BaseEnemy {
     destination: {x: number, y: number} = {x: 550, y: 0};
     hasFired: boolean = false;
@@ -1009,6 +1109,7 @@ export class Unstable extends BaseEnemy {
 }
 
 
+// --------------------------- Boss Set #5 ---------------------------
 export class Amalgamation extends BaseEnemy {
     nextRing: number = 1;
 
@@ -1195,7 +1296,7 @@ export class Amalgamation extends BaseEnemy {
     }
 }
 
-
+// --------------------------- Final Boss Set ---------------------------
 export class InfinityBoss extends BaseEnemy {
     currentAttack: "None" | "Field" | "Cone" | "Ring" = "None";
     nextAttack: number = 0;
