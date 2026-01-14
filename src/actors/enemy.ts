@@ -2,6 +2,7 @@ import { Graphics } from "pixi.js";
 import { Actor, Game } from "unreal-pixijs";
 import { PlayerCharacter } from "./player_character";
 import { EnemyProjectile } from "./projectile";
+import { FightLevel } from "../levels/fight_level";
 
 export class BaseEnemy extends Actor {
     maxHealth: number;
@@ -160,7 +161,7 @@ export class FlankingEnemy extends BaseEnemy {
     destinationFlop = false;
 
     constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
-        super(game, x, y, "Runner", difficulty, boss, 15, "#f49c37ff", 40, 0.999, 25);
+        super(game, x, y, "Runner", difficulty, boss, 15, "#f49c37ff", 40, 0.999, 60);
         this.destination = {x: this.x, y: this.y};
     }
 
@@ -178,7 +179,7 @@ export class FlankingEnemy extends BaseEnemy {
         }
 
         // Movement
-        const speed = [160, 200, 230, 260, 300][this.difficulty];
+        const speed = [160, 200, 230, 260, 300][this.difficulty] * 2;
         const movementVector = this.game.angleToVector(this.game.getAngle({ x: this.x, y: this.y }, this.destination), speed);
 
         this.x += movementVector.x * deltaTime;
@@ -480,18 +481,295 @@ export class Chaser extends BaseEnemy {
                 this.speedMultiplier = 2.5
 
             } else {
+                // No jukes - Reset juke power and charge player.
                 this.jukePower = 10
             }
 
+            // NERF difficulty - Multiply speed of all movement options.
             if (this.difficulty >= 4) {
                 this.speedMultiplier *= 1.4
             }
         }
 
+        // Actual movement calculation.
         const movementVector = this.game.angleToVector(this.game.getAngle({ x: this.x, y: this.y }, { x: this.destination.x, y: this.destination.y }), speed * this.speedMultiplier);
 
         this.x += movementVector.x * deltaTime;
         this.y += movementVector.y * deltaTime;
+    }
+}
+
+
+export class Pulsar extends BaseEnemy {
+    nextShot: number = 1
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Pulsar", difficulty, boss, 160, "#939ba4ff", 160, 1, 60);
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        this.nextShot -= [0.7, 1, 1, 1.3, 2][this.difficulty] * deltaTime;
+
+        if (this.nextShot <= 0) {
+            this.nextShot = 1;
+            const pSpeed = [260, 300, 330, 350, 400][this.difficulty];
+            
+            // Easy: Fire projectile spam.
+            for (let i = 0; i < [5, 5, 5, 5, 10][this.difficulty]; i++) {
+
+                const newProjectile = new EnemyProjectile(this.game, pSpeed, (Math.random() * Math.PI * 2), 10, "#ff0000", 60, 8 * this.getDamageMultiplier());
+                newProjectile.x = this.x;
+                newProjectile.y = this.y;
+                
+                this.game.level!.addActor(newProjectile);
+
+                // Hard: Fire a second set of slower projectiles.
+                if (this.difficulty >= 2) {
+                    const newProjectile = new EnemyProjectile(this.game, pSpeed / 2, (Math.random() * Math.PI * 2), 10, "#ff0000", 60, 8 * this.getDamageMultiplier());
+                    newProjectile.x = this.x;
+                    newProjectile.y = this.y;
+                    
+                    this.game.level!.addActor(newProjectile);
+                }
+            }
+
+            if (this.difficulty >= 1) {
+                const pAngle = this.game.getAngle({ x: this.x, y: this.y }, { x: player.x, y: player.y });
+
+                // Normal: Fire a shot at the player.
+                const newProjectile = new EnemyProjectile(this.game, pSpeed, pAngle, 10, "#ff0000", 60, 6 * this.getDamageMultiplier());
+                newProjectile.x = this.x;
+                newProjectile.y = this.y;
+                
+                this.game.level!.addActor(newProjectile);
+
+                // Impossible: Fire a triple shot alongside the main shot.
+                if (this.difficulty >= 3) {
+                    for (const angleAdjustment of [-(Math.PI / 8), (Math.PI / 8)]) {
+                        const newProjectile = new EnemyProjectile(this.game, pSpeed, pAngle + angleAdjustment, 10, "#ff0000", 60, 6 * this.getDamageMultiplier());
+                        newProjectile.x = this.x;
+                        newProjectile.y = this.y;
+                        
+                        this.game.level!.addActor(newProjectile);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+export class Bouncer extends BaseEnemy {
+    movementAngle: number;
+    reboundTimer: number = 5;
+    speedBoost: number = 1;
+    reboundPrevention: boolean = false;
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Bouncer", difficulty, boss, 150, "#214f57ff", 140, 1, 40);
+        this.movementAngle = Math.random() * (Math.PI * 2);
+    }
+
+    doShot(player: PlayerCharacter) {
+        this.speedBoost = 1;
+        this.reboundPrevention = true;
+
+        const pAngle = this.game.getAngle({ x: this.x, y: this.y }, { x: player.x, y: player.y });
+        const pSpeed = [200, 220, 240, 150, 150][this.difficulty];
+
+        // Normal - Launch projectile at player per bounce.
+        if (this.difficulty >= 1) {
+            const newProjectile = new EnemyProjectile(this.game, pSpeed, pAngle, 10, "#ff0000", 60, 6 * this.getDamageMultiplier());
+            newProjectile.x = this.x;
+            newProjectile.y = this.y;
+            
+            this.game.level!.addActor(newProjectile);
+        }
+
+        // Impossible - Scatter shot from wall per bounce.
+        let scattershotAngle = 0;
+        const boundary = (500 - this.size / 2);
+        
+        if (this.x >= boundary) {
+            scattershotAngle = Math.PI;
+        } else if (this.y <= -boundary) {
+            scattershotAngle = Math.PI / 2;
+        } else if (this.y >= boundary) {
+            scattershotAngle = 3 * Math.PI / 2;
+        }
+
+        const shotCount = [0, 0, 3, 5, 7][this.difficulty];
+
+        if (shotCount <= 0) {
+            return;
+        }
+
+        for (let i = 0; i < shotCount; i++) {
+            const newProjectile = new EnemyProjectile(this.game, 300, scattershotAngle + (Math.PI / 4 - (Math.PI / 2) * (((shotCount - 1) - i) / (shotCount - 1))), 10, "#ff0000", 60, 6 * this.getDamageMultiplier());
+            newProjectile.x = this.x;
+            newProjectile.y = this.y;
+            
+            this.game.level!.addActor(newProjectile);
+        }
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        // Movement
+        const speed = [400, 420, 440, 500, 700][this.difficulty] * this.speedBoost;
+        const movementVector = this.game.angleToVector(this.movementAngle, speed);
+
+        this.x += movementVector.x * deltaTime;
+        this.y += movementVector.y * deltaTime;
+
+        // Bouncing Property
+        if (this.x <= (-500 + this.size / 2) || this.x >= (500 - this.size / 2)) { // Side wall collisions.
+            if (!this.reboundPrevention) {
+                this.movementAngle = Math.PI - this.movementAngle;
+                this.doShot(player);
+            }
+        }
+
+        else if (this.y <= (-500 + this.size / 2) || this.y >= (500 - this.size / 2)) { // Top and bottom wall collisions.
+            if (!this.reboundPrevention) {
+                this.movementAngle = -this.movementAngle;
+                this.doShot(player);
+            }
+        } else {
+            this.reboundPrevention = false;
+        }
+
+        // Hard: Change direction and launch at player every now and then.
+        this.reboundTimer -= [0, 0, 1, 1.2, 1.5][this.difficulty] * deltaTime;
+
+        if (this.reboundTimer <= 0) {
+            this.reboundTimer = 5;
+
+            this.speedBoost = 1.5;
+            this.movementAngle = this.game.getAngle({ x: this.x, y: this.y }, { x: player.x, y: player.y });
+        }
+    }
+}
+
+
+export class Slam extends BaseEnemy {
+    chaseY: boolean;
+    target: number = 0;
+    movementLock: number = 0;
+    nextSpawn: number = 1;
+    spawnedEnemies: BaseEnemy[] = [];
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Slam", difficulty, boss, 140, "#5a675eff", 120, 1, 60);
+
+        this.chaseY = Math.random() >= 0.5;
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        // Handle movement.
+        this.movementLock -= deltaTime;
+        if (this.movementLock <= 0) {
+            const movementSpeed = [300, 320, 350, 400, 600][this.difficulty]
+            if (this.chaseY) {
+                const distanceDiff = this.target - this.y;
+
+                if (distanceDiff != 0) {
+                    this.y += (distanceDiff / Math.abs(distanceDiff)) * movementSpeed * deltaTime;
+                }
+            } else {
+                const distanceDiff = this.target - this.x;
+
+                if (distanceDiff != 0) {
+                    this.x += (distanceDiff / Math.abs(distanceDiff)) * movementSpeed * deltaTime;
+                }
+            }
+
+            if ((this.chaseY && Math.abs(this.target - this.y) <= 10) || (!this.chaseY && Math.abs(this.target - this.x) <= 10)) {
+                this.chaseY = !this.chaseY;
+                this.movementLock = [0.3, 0.2, 0.1, 0.05, 0][this.difficulty];
+
+                if (this.chaseY) {
+                    this.target = player.y;
+                } else {
+                    this.target = player.x;
+                }
+            }
+        }
+
+        // Normal: Summon enemies.
+        this.nextSpawn -= deltaTime;
+
+        if (this.nextSpawn <= 0 && this.spawnedEnemies.length < [0, 3, 4, 6, 8][this.difficulty] && this.difficulty >= 1) {
+            this.nextSpawn = 1;
+
+            const targetPosition = {x: -520, y: -520};
+
+            if (Math.random() <= 0.5) {
+                if (Math.random() <= 0.5) {
+                    targetPosition.y = 520;
+                }
+
+                targetPosition.x = -520 + (Math.random() * 1040);
+            } else {
+                if (Math.random() <= 0.5) {
+                    targetPosition.x = 520;
+                }
+
+                targetPosition.y = -520 + (Math.random() * 1040);
+            }
+
+            let newEnemy: RunnerEnemy | GunnerEnemy | FlankingEnemy = new RunnerEnemy(this.game, targetPosition.x, targetPosition.y, this.difficulty, false)
+            
+            // Impossible: Upgrade runners to flankers.
+            if (this.difficulty >= 3) {
+                newEnemy = new FlankingEnemy(this.game, targetPosition.x, targetPosition.y, this.difficulty, false)
+            }
+
+            // Hard: Upgrade some of the enemies to gunner enemies.
+            if (this.difficulty >= 2 && Math.random() >= 0.7) {
+                newEnemy = new GunnerEnemy(this.game, targetPosition.x, targetPosition.y, this.difficulty, false)
+            }
+            
+            this.game.level!.addActor(newEnemy);
+            this.spawnedEnemies.push(newEnemy);
+        }
+
+        this.spawnedEnemies = this.spawnedEnemies.filter((enemy) => enemy.health > 0);
     }
 }
 
@@ -724,6 +1002,104 @@ export class Station extends BaseEnemy {
 }
 
 
+export class Edge extends BaseEnemy {
+    speed = 0;
+    destination = {x: -9999, y: -9999};
+    attackReady = false
+    nextShot = 0.5;
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Edge", difficulty, boss, 120, "#8e7599ff", 100, 1.0, 120);
+        this.destination = {x: 450 * (Math.random() >= 0.5 ? 1 : -1), y: this.y}
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        // Movement
+        if (this.game.getSquaredDistance({x: this.x, y: this.y}, this.destination) <= 500) {
+            var charging = false;
+
+            this.speed = 0
+            var targetY = 450 * (Math.random() >= 0.5 ? 1 : -1)
+
+            if (this.y > 100) {
+                targetY = -450
+            } else if (this.y < -100) {
+                targetY = 450
+            }
+
+            // Charge Mechanic
+            if (this.attackReady) {
+                this.destination = {x: (this.x > 0 ? -450 : 450), y: this.y};
+                this.attackReady = false;
+                charging = true
+            }
+
+            if (Math.random() >= (this.difficulty >= 3 ? 0.5 : 0.3) && !this.attackReady && !charging) {
+                this.attackReady = true;
+                
+                // Hard: Target player directly half of the time.
+                // Impossible: Always target player.
+                if ((this.difficulty >= 3) || (this.difficulty >= 2 && Math.random() >= 0.5)) {
+                    targetY = this.playerObject!.y;
+                } else {
+                    targetY = 450 - 900 * Math.random()
+                }
+            }
+
+            if (!charging) {
+                this.destination = {x: this.x, y: targetY}
+            }
+
+            // Hard: Fire a ring at each of our destinations.
+            if (this.difficulty >= 2) {
+                for (let i = 0; i < 8; i++) {
+                    const newProjectile = new EnemyProjectile(this.game, 420, (i * (Math.PI / 4)), 10, "#ff0000", 60, 8 * this.getDamageMultiplier());
+                    newProjectile.x = this.x;
+                    newProjectile.y = this.y;
+                    
+                    this.game.level!.addActor(newProjectile);
+                }
+            }
+        }
+
+        const movementVector = this.game.angleToVector(this.game.getAngle({ x: this.x, y: this.y }, { x: this.destination.x, y: this.destination.y }), this.speed);
+
+        this.x += movementVector.x * deltaTime;
+        this.y += movementVector.y * deltaTime;
+
+        this.speed += [500, 1000, 1050, 1100, 1800][this.difficulty] * deltaTime * 2
+
+        // Impossible: Fire a projectile up and down while charging.
+        if (this.difficulty >= 3 && this.y == this.destination.y) {
+            this.nextShot -= deltaTime;
+
+            if (this.nextShot <= 0) {
+                this.nextShot = 0.1;
+
+                for(const direction of [(Math.PI / 2), (Math.PI / -2)]) {
+                    const newProjectile = new EnemyProjectile(this.game, 500, direction, 10, "#ff0000", 60, 8 * this.getDamageMultiplier());
+                    newProjectile.x = this.x;
+                    newProjectile.y = this.y;
+                    
+                    this.game.level!.addActor(newProjectile);
+                }
+            }
+        }
+    }
+}
+
 // --------------------------- Boss Set #3 ---------------------------
 export class Shadow extends BaseEnemy {
     nextTeleport: number = 25;
@@ -927,6 +1303,75 @@ export class Commando extends BaseEnemy {
                 }
             }
         }
+    }
+}
+
+
+export class Warp extends BaseEnemy {
+    target: number = 0;
+    movementLock: number = 0;
+    nextShot: number = 1;
+    spawnedEnemies: BaseEnemy[] = [];
+    timeDial: number = 0;
+
+    constructor(game: Game, x: number, y: number, difficulty: number, boss: boolean) {
+        super(game, x, y, "Warp", difficulty, boss, 180, "#20803dff", 60, 0.999, 40);
+    }
+
+    update(deltaTime: number) {
+        super.update(deltaTime);
+
+        if (this.health <= 0 && this.boss) {
+            const level = this.level as FightLevel
+            level.timeMultiplier = 1.0;
+            return;
+        }
+
+        const player = this.game.level!.getActorOfClass(PlayerCharacter);
+
+        if (player === undefined) {
+            return;
+        }
+
+        const speed = [180, 200, 220, 240, 280][this.difficulty] * 1.2;
+        const movementVector = this.game.angleToVector(this.game.getAngle({ x: this.x, y: this.y }, { x: player.x, y: player.y }), speed);
+
+        this.x += movementVector.x * deltaTime;
+        this.y += movementVector.y * deltaTime;
+
+        // Shooting
+        this.nextShot -= deltaTime * [1.5, 2, 2, 2.2, 3][this.difficulty] * 2.5
+        if (this.nextShot <= 0) {
+            this.nextShot = 1;
+
+            var spawnX = -500 + (Math.random() * 1040);
+            const projectileSpeed = [200, 250, 300, 400, 500][this.difficulty] * 1.0
+            //const acceleration = [1000, 1200, 1500, 2000, 2400][this.difficulty] * 0.5
+            const acceleration = 1500
+
+            const newProjectile = new EnemyProjectile(this.game, projectileSpeed, (Math.PI / 2), 10, "#ff0000", 60, 7 * this.getDamageMultiplier(), acceleration);
+            newProjectile.x = spawnX;
+            newProjectile.y = -510;
+            
+            this.game.level!.addActor(newProjectile);
+
+            // Hard: Add attacks from the right-hand side of the screen.
+            if (this.difficulty >= 2) {
+                const newProjectile = new EnemyProjectile(this.game, projectileSpeed, 0, 10, "#ff0000", 60, 7 * this.getDamageMultiplier(), acceleration);
+                newProjectile.y = spawnX;
+                newProjectile.x = -510;
+                
+                this.game.level!.addActor(newProjectile);
+            }
+        }
+
+        // Time Dialation
+        let minSpeed = [0.1, 0.2, 0.3, 0.4, 0.6][this.difficulty]
+        let maxSpeed = [1.0, 1.2, 1.3, 1.5, 2.0][this.difficulty]
+
+        const level = this.level as FightLevel
+        this.timeDial += level.realDeltaTime;
+        level.timeMultiplier = ((maxSpeed - minSpeed) / 2) * Math.sin(this.timeDial) + ((maxSpeed + minSpeed) / 2)
     }
 }
 

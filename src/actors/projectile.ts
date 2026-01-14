@@ -145,14 +145,18 @@ export class PlayerLingeringProjectile extends Projectile {
 
 export class EnemyProjectile extends Projectile {
     damage: number;
+    accelerationSpeed: number;
 
-    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1) {
+    constructor(game: Game, speed: number, angle: number, size: number, colour: string, lifetime: number = 60, damage: number = 1, accelerationSpeed = 0.0) {
         super(game, speed, angle, size, colour, lifetime, 0);
         this.damage = damage
+        this.accelerationSpeed = accelerationSpeed
     }
 
     update(deltaTime: number) {
         super.update(deltaTime);
+
+        this.speed += this.accelerationSpeed * deltaTime
 
         for (const enemy of this.game.level!.getActorsOfClass(PlayerCharacter)) {
             if (this.game.pointToRectCollision({ x: this.x, y: this.y }, {x: enemy.x - 20, y: enemy.y - 20, xSize: 40, ySize: 40}) && !enemy.isDashing) {
